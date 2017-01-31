@@ -9,6 +9,7 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -43,19 +44,20 @@ public class ChatGui {
 		JMenuItem serverMenuItem = new JMenuItem("Server");
 		serverMenuItem.setName("Server");
 		serverMenuItem.setToolTipText("Start server");
-		serverMenuItem.addActionListener(
-				new ChatGui().new StartMenuListener());
+		serverMenuItem.addActionListener(new ChatGui().new StartMenuListener());
 		startMenu.add(serverMenuItem);
 		
 		JMenuItem clientMenuItem = new JMenuItem("Client");
 		clientMenuItem.setName("Client");
 		clientMenuItem.setToolTipText("Start client");
-		clientMenuItem.addActionListener(
-				new ChatGui().new StartMenuListener());
+		clientMenuItem.addActionListener(new ChatGui().new StartMenuListener());
 		startMenu.add(clientMenuItem);
 		
 		menuBar.add(startMenu);
 		guiFrame.setJMenuBar(menuBar);
+		
+		JButton bStart = new JButton("Start server");
+		guiFrame.add(bStart);
 		
 		guiFrame.pack();
 		guiFrame.setVisible(true);
@@ -76,7 +78,11 @@ public class ChatGui {
 				}
 				break;
 			case "Client":
-				
+				try {
+					new ChatClient().receive();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
 				break;
 			}
 		}
