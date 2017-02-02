@@ -66,11 +66,8 @@ public class ChatGui {
 			System.out.println("Name:" + menuItem.getName());
 			switch(menuItem.getName()) {
 			case "Server":
-				try {
-					ChatServer.getInstance().run();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
+				ChatServer server = ChatServer.getInstance();
+				server.run();
 				break;
 			case "Client":
 				try {

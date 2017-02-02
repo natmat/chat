@@ -8,6 +8,7 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -42,29 +43,35 @@ public class ChatServer implements Runnable {
 		System.out.printf("\n");
 	}
 
-	public static ChatServer getInstance() throws IOException {
+	public static ChatServer getInstance() {
 		if (null == instance) {
 			instance = new ChatServer();
 		}
 		return(instance);
 	}
 
-	private ChatServer() throws IOException {
-		chatServer = new ServerSocket(acceptPort);
-		clientPool = Executors.newFixedThreadPool(clientPoolSize);
-		clientSockets = new ArrayList<>(clientPoolSize);
-
-		hostAddr = InetAddress.getLocalHost().getHostAddress();
-		System.out.println("HostAddr: " + hostAddr);
-	}
-
-	public static void startChatServer() {
+	private ChatServer() {
 		try {
-			new Thread(getInstance()).start();
+			chatServer = new ServerSocket(acceptPort);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		clientPool = Executors.newFixedThreadPool(clientPoolSize);
+		clientSockets = new ArrayList<>(clientPoolSize);
+
+		try {
+			hostAddr = InetAddress.getLocalHost().getHostAddress();
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.println("HostAddr: " + hostAddr);
+	}
+
+	public static void startChatServer() {
+		Thread serverThread = new Thread(getInstance());
+		serverThread.start();
 	}
 
 	@Override
