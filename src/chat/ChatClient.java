@@ -3,27 +3,24 @@ package chat;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
 public class ChatClient extends Thread {
 
-	private int acceptPort;
 	private Socket clientSocket = null;
-	private String serverInetAddress;
+	private String serverAddress;
 
 	public static void main(String[] args) throws UnknownHostException, IOException {
-		ChatServer server = new ChatServer();
-		ChatClient client = new ChatClient();
+		ChatClient client = new ChatClient();		
+		ChatServer.startChatServer();
+		client.receive();
 	}
 
 	public ChatClient() {
-		this.acceptPort = ChatServer.getAcceptPort();
-		this.serverInetAddress = ChatServer.getInetAddress();
+		this.serverAddress = ChatServer.getHostAddress();
 		try {
-			clientSocket = new Socket(serverInetAddress, acceptPort);
+			clientSocket = new Socket(serverAddress, ChatServer.getAcceptPort());
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

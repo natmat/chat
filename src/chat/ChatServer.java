@@ -2,51 +2,71 @@ package chat;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import com.sun.org.apache.xml.internal.utils.SystemIDResolver;
 
 public class ChatServer implements Runnable {
 
 	private static ServerSocket chatServer = null;
 	private final ExecutorService clientPool;
 	private final static int clientPoolSize = 1;
-	private static ChatServer instance = null;
 	private static ArrayList<Socket> clientSockets;
-	
+	private static ChatServer instance = null;
+	private static String hostAddr;
+
 	public final static int acceptPort = 8304;
 
 	public static void main(String[] args) throws IOException {
-		instance = new ChatServer();
+		instance = ChatServer.getInstance();
 		startChatServer();
 	}
 
-	public ChatServer() throws IOException {
+	static void displayInterfaceInformation(NetworkInterface netint) throws SocketException {
+		System.out.printf("Display name: %s\n", netint.getDisplayName());
+		System.out.printf("Name: %s\n", netint.getName());
+		Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
+		for (InetAddress inetAddress : Collections.list(inetAddresses)) {
+			System.out.printf("InetAddress: %s\n", inetAddress);
+		}
+		System.out.printf("\n");
+	}
+
+	public static ChatServer getInstance() throws IOException {
+		if (null == instance) {
+			instance = new ChatServer();
+		}
+		return(instance);
+	}
+
+	private ChatServer() throws IOException {
 		chatServer = new ServerSocket(acceptPort);
 		clientPool = Executors.newFixedThreadPool(clientPoolSize);
 		clientSockets = new ArrayList<>(clientPoolSize);
+
+		hostAddr = InetAddress.getLocalHost().getHostAddress();
+		System.out.println("HostAddr: " + hostAddr);
 	}
-	
+
 	public static void startChatServer() {
-		if (null == instance) {
-			try {
-				instance = new ChatServer();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		try {
+			new Thread(getInstance()).start();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		new Thread(instance).start();
 	}
-	
+
 	@Override
 	public void run() {
 		System.out.println("Running server");
@@ -58,7 +78,7 @@ public class ChatServer implements Runnable {
 				e.printStackTrace();
 				clientPool.shutdown();
 			}
-			
+
 		}
 	}
 
@@ -116,12 +136,16 @@ public class ChatServer implements Runnable {
 			Thread.currentThread().interrupt();
 		}
 	}
-	
+
 	public static int getAcceptPort() {
 		return(acceptPort);
 	}
 
-	public static String getInetAddress() {
-		return chatServer.getInetAddress().toString();
+	/**
+	 * Returns the IP address string in textual presentation.
+	 * @return host address
+	 */
+	public static String getHostAddress() {
+		return(hostAddr);
 	}
 }

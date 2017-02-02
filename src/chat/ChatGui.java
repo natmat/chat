@@ -9,7 +9,6 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 
 import javax.swing.BorderFactory;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -56,9 +55,6 @@ public class ChatGui {
 		menuBar.add(startMenu);
 		guiFrame.setJMenuBar(menuBar);
 		
-		JButton bStart = new JButton("Start server");
-		guiFrame.add(bStart);
-		
 		guiFrame.pack();
 		guiFrame.setVisible(true);
 	}
@@ -71,9 +67,8 @@ public class ChatGui {
 			switch(menuItem.getName()) {
 			case "Server":
 				try {
-					new ChatServer();
+					ChatServer.getInstance().run();
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 				break;
