@@ -3,7 +3,9 @@ package chat;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,6 +18,8 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import javax.print.attribute.standard.PrinterState;
 
 public class ChatServer implements Runnable {
 
@@ -52,7 +56,8 @@ public class ChatServer implements Runnable {
 
 	private ChatServer() {
 		try {
-			chatServer = new ServerSocket(acceptPort);
+			chatServer = new ServerSocket();
+			chatServer.bind(new InetSocketAddress("localhost", acceptPort));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -94,7 +99,6 @@ public class ChatServer implements Runnable {
 		public void run() {
 			System.out.println("Accepted...");
 			int quit = 10;
-			BufferedWriter outputBW = null;
 			boolean running = true;
 			Random toss = new Random();
 			while (running && (quit-- > 0)) {
@@ -108,9 +112,9 @@ public class ChatServer implements Runnable {
 						msg = Long.toString(System.currentTimeMillis());
 //					}
 					try {
-						outputBW = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
+						PrintStream outStream = new PrintStream(client.getOutputStream());
 						System.out.println("Out: " + msg);
-						outputBW.write(msg);
+						outStream.println(msg);
 					} catch (IOException e) {
 						e.printStackTrace();
 					}

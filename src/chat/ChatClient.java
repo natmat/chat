@@ -1,6 +1,7 @@
 package chat;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
@@ -29,29 +30,30 @@ public class ChatClient implements Runnable {
 
 	@Override
 	public void run() {
-		BufferedReader inputBR = null;
+		DataInputStream inputStream = null;
+		BufferedReader br = null;
 		try {
-			inputBR = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+			br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		String inputLine = null;
 		while (true) {
 			System.out.println("readline()...");
-			String in = "EMPTY";
 			try {
-				in = inputBR.readLine();
+				inputLine = br.readLine();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			System.out.println("read in:" + in);
-			if ("QUIT".equals(in)) {
+			System.out.println("client< " + inputLine);
+			if ("QUIT".equals(inputLine)) {
 				break;
 			}
 		}
 		try {
-			inputBR.close();
+			br.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

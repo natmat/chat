@@ -6,8 +6,6 @@ import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.io.IOException;
-
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -22,6 +20,10 @@ public class ChatGui {
 			@Override
 			public void run() {
 				createAndShowGUI();
+				ChatServer server = ChatServer.getInstance();
+				new Thread(server).start();
+				ChatClient client = new ChatClient();
+				new Thread(client).start();
 			}
 		});
 	}
