@@ -99,16 +99,17 @@ public class ChatServer implements Runnable {
 			Random toss = new Random();
 			while (running && (quit-- > 0)) {
 				for (Socket client : clientSockets) {
+					String msg;
+//					if (0 == toss.nextInt(5)) {
+//						msg = "QUIT";
+//						running = false;
+//					}
+//					else {
+						msg = Long.toString(System.currentTimeMillis());
+//					}
 					try {
-						String msg;
 						outputBW = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-						if (0 == toss.nextInt(5)) {
-							msg = "QUIT";
-							running = false;
-						}
-						else {
-							msg = Long.toString(System.currentTimeMillis());
-						}
+						System.out.println("Out: " + msg);
 						outputBW.write(msg);
 					} catch (IOException e) {
 						e.printStackTrace();
