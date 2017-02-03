@@ -67,14 +67,11 @@ public class ChatGui {
 			switch(menuItem.getName()) {
 			case "Server":
 				ChatServer server = ChatServer.getInstance();
-				server.run();
+				new Thread(server).start();
 				break;
 			case "Client":
-				try {
-					new ChatClient().receive();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
+				ChatClient client = new ChatClient();
+				new Thread(client).start();
 				break;
 			}
 		}
@@ -93,9 +90,7 @@ public class ChatGui {
 
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);       
-
-			// Draw Text
-			g.drawString("This is my custom Panel!",10,20);
+			g.drawString("Chat panel!",10,20);
 		}  
 	}
 }

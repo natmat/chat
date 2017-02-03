@@ -59,14 +59,6 @@ public class ChatServer implements Runnable {
 		}
 		clientPool = Executors.newFixedThreadPool(clientPoolSize);
 		clientSockets = new ArrayList<>(clientPoolSize);
-
-		try {
-			hostAddr = InetAddress.getLocalHost().getHostAddress();
-		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		System.out.println("HostAddr: " + hostAddr);
 	}
 
 	public static void startChatServer() {
@@ -79,7 +71,9 @@ public class ChatServer implements Runnable {
 		System.out.println("Running server");
 		for(;;) {
 			try {
-				clientPool.execute(new Handler(chatServer.accept()));
+				System.out.println("Waiting to accept...");
+				Socket client = chatServer.accept(); 
+				clientPool.execute(new Handler(client));
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -92,12 +86,13 @@ public class ChatServer implements Runnable {
 	private class Handler implements Runnable {
 
 		public Handler(Socket acceptSocket) {
-			System.out.println("Accepted: " + acceptSocket);
+			System.out.println("Handler socket: " + acceptSocket);
 			clientSockets.add(acceptSocket);
 		}
 
 		@Override
 		public void run() {
+			System.out.println("Accepted...");
 			int quit = 10;
 			BufferedWriter outputBW = null;
 			boolean running = true;

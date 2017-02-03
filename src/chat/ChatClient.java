@@ -6,24 +6,20 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-public class ChatClient extends Thread {
+public class ChatClient implements Runnable {
 
 	private Socket clientSocket = null;
 	private String serverAddress;
 
 	public static void main(String[] args) throws UnknownHostException, IOException {
-		ChatClient client = new ChatClient();		
 		ChatServer.startChatServer();
-		client.receive();
+		ChatClient client = new ChatClient();
+		new Thread(client).start();
 	}
 
 	public ChatClient() {
-		this.serverAddress = ChatServer.getHostAddress();
 		try {
-			clientSocket = new Socket(serverAddress, ChatServer.getAcceptPort());
-		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			clientSocket = new Socket(ChatServer.getHostAddress(), ChatServer.getAcceptPort());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -31,7 +27,8 @@ public class ChatClient extends Thread {
 		System.out.println("clientSocket:" + clientSocket);
 	}
 
-	public void receive() throws IOException {
+	@Override
+	public void run() {
 		BufferedReader inputBR = null;
 		try {
 			inputBR = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -40,12 +37,24 @@ public class ChatClient extends Thread {
 			e.printStackTrace();
 		}
 		while (true) {
-			String in = inputBR.readLine();
-			System.out.println("Client:" + this.getName() + " IN: " + in);
+			System.out.println("readline()...");
+			String in = "EMPTY";
+			try {
+				in = inputBR.readLine();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			System.out.println("read in:" + in);
 			if ("QUIT".equals(in)) {
 				break;
 			}
 		}
-		inputBR.close();
+		try {
+			inputBR.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }
