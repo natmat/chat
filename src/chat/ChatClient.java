@@ -20,7 +20,7 @@ public class ChatClient implements Runnable {
 
 	public ChatClient() {
 		try {
-			clientSocket = new Socket(ChatServer.getHostAddress(), ChatServer.getAcceptPort());
+			clientSocket = new Socket(ChatServer.getHostName(), ChatServer.getAcceptPort());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -40,14 +40,14 @@ public class ChatClient implements Runnable {
 		}
 		String inputLine = null;
 		while (true) {
-			System.out.println("readline()...");
 			try {
 				inputLine = br.readLine();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			System.out.println("client< " + inputLine);
+			long delta = System.currentTimeMillis() - Long.parseLong(inputLine);
+			System.out.println("client< " + delta + "ms\n");
 			if ("QUIT".equals(inputLine)) {
 				break;
 			}
