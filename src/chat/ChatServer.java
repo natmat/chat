@@ -13,6 +13,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -39,7 +40,7 @@ public class ChatServer implements Runnable {
 		System.out.println("StartUDP");
 		startUDPBroadcast();
 
-		exitTimeout(10);
+		exitTimeout(600);
 	}
 
 	private static void exitTimeout(int timeoutS) {
@@ -48,7 +49,7 @@ public class ChatServer implements Runnable {
 			@Override
 			public void run() {
 				try {
-					Thread.sleep(1000*timeoutS);
+					Thread.sleep(1000 * timeoutS);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -66,7 +67,7 @@ public class ChatServer implements Runnable {
 		if (null == instance) {
 			instance = new ChatServer();
 		}
-		return(instance);
+		return (instance);
 	}
 
 	private ChatServer() {
@@ -83,22 +84,23 @@ public class ChatServer implements Runnable {
 	}
 
 	private static InetAddress getBroadcastAddress() {
-		HashSet<InetAddress> listOfBroadcasts = new HashSet<InetAddress>();
+		HashSet<InetAddress> listOfBroadcasts = new HashSet<>();
 		Enumeration<NetworkInterface> list;
 		try {
 			list = NetworkInterface.getNetworkInterfaces();
 
-			while(list.hasMoreElements()) {
-				NetworkInterface iface = (NetworkInterface) list.nextElement();
-				if(iface == null) continue;
-				if(!iface.isLoopback() && iface.isUp()) {
+			while (list.hasMoreElements()) {
+				NetworkInterface iface = list.nextElement();
+				if (iface == null)
+					continue;
+				if (!iface.isLoopback() && iface.isUp()) {
 					Iterator<InterfaceAddress> it = iface.getInterfaceAddresses().iterator();
 					while (it.hasNext()) {
-						InterfaceAddress address = (InterfaceAddress) it.next();
-						if(address == null) continue;
+						InterfaceAddress address = it.next();
+						if (address == null)
+							continue;
 						InetAddress broadcast = address.getBroadcast();
-						if(broadcast != null) 
-						{
+						if (broadcast != null) {
 							listOfBroadcasts.add(broadcast);
 						}
 					}
@@ -109,9 +111,12 @@ public class ChatServer implements Runnable {
 			ex.printStackTrace();
 		}
 		InetAddress ba = listOfBroadcasts.iterator().next();
-		return(ba);
+		return (ba);
 	}
 
+	/**
+	 * Pulse UDP broadcast with increment byte[] data
+	 */
 	public static void startUDPBroadcast() {
 		new Thread(new Runnable() {
 			@Override
@@ -128,16 +133,15 @@ public class ChatServer implements Runnable {
 				}
 
 				int i = 1;
-				while (ChatServer.clientSockets.size() == 0) {	
-					byte[] buf = {(byte)0x12, (byte)0x34, (byte)0x56, (byte)(i++)};
-					DatagramPacket packet = new DatagramPacket(
-							buf, 4, broadcastAddress, 8300);
+				while (ChatServer.clientSockets.size() == 0) {
+					byte[] buf = { (byte) i, (byte) i, (byte) i, (byte) i };
+					i++;
+					DatagramPacket packet = new DatagramPacket(buf, buf.length, broadcastAddress, 8300);
 					try {
-						System.out.println("packet " + i + ":" + packet);
+						System.out.println("packet " + i + ":" + Arrays.toString(packet.getData()));
 						broadcastSocket.send(packet);
 						Thread.sleep(1000);
 					} catch (InterruptedException | IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
@@ -154,10 +158,10 @@ public class ChatServer implements Runnable {
 	@Override
 	public void run() {
 		System.out.println("Running server");
-		while(true) {
+		while (true) {
 			try {
 				System.out.println("Waiting to accept...");
-				Socket client = socketAccept.accept(); 
+				Socket client = socketAccept.accept();
 				clientPool.execute(new Handler(client));
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -200,8 +204,8 @@ public class ChatServer implements Runnable {
 					}
 				}
 			}
-		}		
-	}	
+		}
+	}
 
 	void shutdownAndAwaitTermination(ExecutorService pool) {
 		try {
@@ -220,19 +224,20 @@ public class ChatServer implements Runnable {
 	}
 
 	private int numberOfClient() {
-		return(clientSockets.size());
+		return (clientSockets.size());
 	}
 
 	public static int getAcceptPort() {
-		return(acceptPort);
+		return (acceptPort);
 	}
 
 	/**
 	 * Returns the IP address string in textual presentation.
+	 * 
 	 * @return host address
 	 */
 	public static String getHostName() {
 		System.out.println("hostName=" + hostName);
-		return(hostName);
+		return (hostName);
 	}
 }
