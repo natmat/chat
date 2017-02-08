@@ -1,9 +1,7 @@
 package chat;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Inet4Address;
@@ -15,6 +13,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -32,18 +33,22 @@ public class ChatServer implements Runnable {
 
 	public static void main(String[] args) throws IOException {
 		instance = ChatServer.getInstance();
-		startChatServer();
 
-		exitTimeout();
+		System.out.println("Start");
+		startChatServer();
+		System.out.println("StartUDP");
+		startUDPBroadcast();
+
+		exitTimeout(10);
 	}
 
-	private static void exitTimeout() {
+	private static void exitTimeout(int timeoutS) {
 		new Thread(new Runnable() {
 
 			@Override
 			public void run() {
 				try {
-					Thread.sleep(5000);
+					Thread.sleep(1000*timeoutS);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -75,44 +80,70 @@ public class ChatServer implements Runnable {
 
 		clientPool = Executors.newFixedThreadPool(clientPoolSize);
 		clientSockets = new ArrayList<>(clientPoolSize);
-
-		startUDPBroadcast();
 	}
 
-	private void startUDPBroadcast() {
+	private static InetAddress getBroadcastAddress() {
+		HashSet<InetAddress> listOfBroadcasts = new HashSet<InetAddress>();
+		Enumeration<NetworkInterface> list;
+		try {
+			list = NetworkInterface.getNetworkInterfaces();
+
+			while(list.hasMoreElements()) {
+				NetworkInterface iface = (NetworkInterface) list.nextElement();
+				if(iface == null) continue;
+				if(!iface.isLoopback() && iface.isUp()) {
+					Iterator<InterfaceAddress> it = iface.getInterfaceAddresses().iterator();
+					while (it.hasNext()) {
+						InterfaceAddress address = (InterfaceAddress) it.next();
+						if(address == null) continue;
+						InetAddress broadcast = address.getBroadcast();
+						if(broadcast != null) 
+						{
+							listOfBroadcasts.add(broadcast);
+						}
+					}
+				}
+			}
+		} catch (SocketException ex) {
+			System.err.println("Error while getting network interfaces");
+			ex.printStackTrace();
+		}
+		InetAddress ba = listOfBroadcasts.iterator().next();
+		return(ba);
+	}
+
+	public static void startUDPBroadcast() {
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				System.out.println("startUDPBroadcast");
-				DatagramSocket broadcastSocket;
+				InetAddress broadcastAddress = getBroadcastAddress();
+				DatagramSocket broadcastSocket = null;
 				try {
 					broadcastSocket = new DatagramSocket(8300);
 					broadcastSocket.setBroadcast(true);
-
-					InetAddress ia = Inet4Address.getLocalHost();
-					System.out.println(ia);
-					NetworkInterface ni = NetworkInterface.getByInetAddress(ia);
-					System.out.println(ni);
-					InetAddress bcast = ni.getInterfaceAddresses().get(1).getBroadcast();
-					System.out.println(bcast);
 				} catch (SocketException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 
-				byte[] buf = {(byte)0x12, (byte)0x34, (byte)0x56, (byte)0x78};
-				DatagramPacket packet = new DatagramPacket(buf, 4, bcast, 8300);
-
-				Integer i = 1;
-				i++;
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				int i = 1;
+				while (ChatServer.clientSockets.size() == 0) {	
+					byte[] buf = {(byte)0x12, (byte)0x34, (byte)0x56, (byte)(i++)};
+					DatagramPacket packet = new DatagramPacket(
+							buf, 4, broadcastAddress, 8300);
+					try {
+						System.out.println("packet " + i + ":" + packet);
+						broadcastSocket.send(packet);
+						Thread.sleep(1000);
+					} catch (InterruptedException | IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
+				broadcastSocket.close();
 			}
-		});
+		}).start();
 	}
 
 	public static void startChatServer() {
@@ -123,7 +154,7 @@ public class ChatServer implements Runnable {
 	@Override
 	public void run() {
 		System.out.println("Running server");
-		for(;;) {
+		while(true) {
 			try {
 				System.out.println("Waiting to accept...");
 				Socket client = socketAccept.accept(); 
