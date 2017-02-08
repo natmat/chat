@@ -10,15 +10,16 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 
 public class ChatClient implements Runnable {
 
+	private static String serverAddress;
 	private Socket clientSocket = null;
 
 	public static void main(String[] args) throws UnknownHostException, IOException {
-		ChatServer.startChatServer();
-		
-		ChatServer.startUDPBroadcast();
+//		ChatServer.startChatServer();
+//		ChatServer.startUDPBroadcast();
 		
 		ChatClient.findServer();
 		ChatClient client = new ChatClient();
@@ -53,11 +54,9 @@ public class ChatClient implements Runnable {
 				e.printStackTrace();
 			}
 			
-			System.out.println(">>>Discovery packet received from: " 
-					+ packet.getAddress().getHostAddress());
-			
-	        System.out.println(">>>Packet received; data: " 
-	        		+ new String(packet.getData()));
+			serverAddress = packet.getAddress().getHostAddress();
+			System.out.println("<< " 
+					+ serverAddress + ":" + Arrays.toString(packet.getData()));
 		}
 		broadcastSocket.close();
 	}
