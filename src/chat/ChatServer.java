@@ -223,10 +223,6 @@ public class ChatServer implements Runnable {
 		}
 	}
 
-	private int numberOfClient() {
-		return (clientSockets.size());
-	}
-
 	public static int getAcceptPort() {
 		return (acceptPort);
 	}

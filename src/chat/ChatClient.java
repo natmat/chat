@@ -12,9 +12,12 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
+import javax.swing.text.AbstractDocument.BranchElement;
+
 public class ChatClient implements Runnable {
 
 	private static String serverAddress;
+	private static DatagramSocket broadcastSocket;
 	private Socket clientSocket = null;
 
 	public static void main(String[] args) throws UnknownHostException, IOException {
@@ -35,28 +38,42 @@ public class ChatClient implements Runnable {
 
 	private static void findServer() {
 		System.out.println("FindServer()");
-		DatagramSocket broadcastSocket = null;
+		broadcastSocket = null;
 		try {
 			broadcastSocket = new DatagramSocket(8300, InetAddress.getByName("0.0.0.0"));
 			broadcastSocket.setBroadcast(true);
+			broadcastSocket.setSoTimeout(5000);
 
 		} catch (SocketException | UnknownHostException e1) {
 			e1.printStackTrace();
 		}
 		
-		int i = 10;
-		while (i-- > 0) {
+		new Thread(new Runnable( ) {
+			
+			@Override
+			public void run() {
+				try {
+					Thread.sleep(2000);
+					broadcastSocket.close();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}).start();
+		
+		while (serverAddress == null) {
 			byte[] buf = new byte[4];
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
 			try {
 				broadcastSocket.receive(packet);
+				serverAddress = packet.getAddress().getHostAddress();
+				System.out.println("<< " 
+						+ serverAddress + ":" + Arrays.toString(packet.getData()));
 			} catch (IOException e) {
 				e.printStackTrace();
+				break;
 			}
-			
-			serverAddress = packet.getAddress().getHostAddress();
-			System.out.println("<< " 
-					+ serverAddress + ":" + Arrays.toString(packet.getData()));
 		}
 		broadcastSocket.close();
 	}
@@ -65,7 +82,6 @@ public class ChatClient implements Runnable {
 		try {
 			clientSocket = new Socket(ChatServer.getHostName(), ChatServer.getAcceptPort());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		System.out.println("clientSocket:" + clientSocket);
@@ -73,12 +89,10 @@ public class ChatClient implements Runnable {
 
 	@Override
 	public void run() {
-		DataInputStream inputStream = null;
 		BufferedReader br = null;
 		try {
 			br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -87,7 +101,6 @@ public class ChatClient implements Runnable {
 			try {
 				inputLine = br.readLine();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			long delta = System.currentTimeMillis() - Long.parseLong(inputLine);
@@ -99,7 +112,6 @@ public class ChatClient implements Runnable {
 		try {
 			br.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
