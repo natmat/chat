@@ -20,16 +20,18 @@ public class ChatGui {
 			@Override
 			public void run() {
 				createAndShowGUI();
+				
 				ChatServer server = ChatServer.getInstance();
 				new Thread(server).start();
+				
 				ChatClient client = new ChatClient();
 				new Thread(client).start();
 			}
 		});
 	}
-	
+
 	public ChatGui() {
-		
+
 	}
 
 	private static void createAndShowGUI() {
@@ -37,7 +39,7 @@ public class ChatGui {
 		guiFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		MyPanel guiPanel = new ChatGui().new MyPanel();
 		guiFrame.add(guiPanel);	
-		
+
 		JMenuBar menuBar = new JMenuBar();
 		JMenu startMenu = new JMenu("Start");
 		startMenu.setMnemonic(KeyEvent.VK_S);
@@ -47,20 +49,20 @@ public class ChatGui {
 		serverMenuItem.setToolTipText("Start server");
 		serverMenuItem.addActionListener(new ChatGui().new StartMenuListener());
 		startMenu.add(serverMenuItem);
-		
+
 		JMenuItem clientMenuItem = new JMenuItem("Client");
 		clientMenuItem.setName("Client");
 		clientMenuItem.setToolTipText("Start client");
 		clientMenuItem.addActionListener(new ChatGui().new StartMenuListener());
 		startMenu.add(clientMenuItem);
-		
+
 		menuBar.add(startMenu);
 		guiFrame.setJMenuBar(menuBar);
-		
+
 		guiFrame.pack();
 		guiFrame.setVisible(true);
 	}
-	
+
 	class StartMenuListener implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
@@ -87,12 +89,12 @@ public class ChatGui {
 		}
 
 		public Dimension getPreferredSize() {
-			return new Dimension(250,200);
+			return new Dimension(250, 200);
 		}
 
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);       
-			g.drawString("Chat panel!",10,20);
+			g.drawString("Chat panel!", 10, 20);
 		}  
 	}
 }

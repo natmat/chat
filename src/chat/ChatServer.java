@@ -37,6 +37,7 @@ public class ChatServer implements Runnable {
 
 		System.out.println("Start");
 		startChatServer();
+		
 		System.out.println("StartUDP");
 		startUDPBroadcast();
 
@@ -93,12 +94,14 @@ public class ChatServer implements Runnable {
 				NetworkInterface iface = list.nextElement();
 				if (iface == null)
 					continue;
+				
 				if (!iface.isLoopback() && iface.isUp()) {
 					Iterator<InterfaceAddress> it = iface.getInterfaceAddresses().iterator();
 					while (it.hasNext()) {
 						InterfaceAddress address = it.next();
 						if (address == null)
 							continue;
+						
 						InetAddress broadcast = address.getBroadcast();
 						if (broadcast != null) {
 							listOfBroadcasts.add(broadcast);
@@ -110,6 +113,7 @@ public class ChatServer implements Runnable {
 			System.err.println("Error while getting network interfaces");
 			ex.printStackTrace();
 		}
+		
 		InetAddress ba = listOfBroadcasts.iterator().next();
 		return (ba);
 	}
