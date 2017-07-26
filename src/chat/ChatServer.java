@@ -35,13 +35,13 @@ public class ChatServer implements Runnable {
 	public static void main(String[] args) throws IOException {
 		instance = ChatServer.getInstance();
 
-		System.out.println("Start");
+		System.out.println("startChatServer");
 		startChatServer();
 		
-		System.out.println("StartUDP");
+		System.out.println("startUDPBroadcast");
 		startUDPBroadcast();
 
-		exitTimeout(600);
+		exitTimeout(10);
 	}
 
 	private static void exitTimeout(int timeoutS) {
@@ -57,7 +57,7 @@ public class ChatServer implements Runnable {
 				}
 				ChatServer.getInstance();
 				if (ChatServer.clientSockets.isEmpty()) {
-					System.out.println("No clients. EXIT");
+					System.out.println("No clients connnected. EXIT");
 					System.exit(0);
 				}
 			}
@@ -115,7 +115,7 @@ public class ChatServer implements Runnable {
 		}
 		
 		InetAddress ba = listOfBroadcasts.iterator().next();
-		return (ba);
+		return(ba);
 	}
 
 	/**

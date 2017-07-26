@@ -7,6 +7,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -23,7 +24,13 @@ public class ChatGui {
 				
 				ChatServer server = ChatServer.getInstance();
 				new Thread(server).start();
-				
+
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				ChatClient client = new ChatClient();
 				new Thread(client).start();
 			}
@@ -59,6 +66,13 @@ public class ChatGui {
 		menuBar.add(startMenu);
 		guiFrame.setJMenuBar(menuBar);
 
+		JButton serverButton = new JButton("Server");
+		JButton clientButton = new JButton("Client");
+		clientButton.setBackground(Color.RED);
+		
+		guiPanel.add(serverButton);
+		guiPanel.add(clientButton);
+		
 		guiFrame.pack();
 		guiFrame.setVisible(true);
 	}
@@ -98,3 +112,4 @@ public class ChatGui {
 		}  
 	}
 }
+
