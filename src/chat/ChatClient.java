@@ -141,6 +141,10 @@ public class ChatClient implements Runnable {
 		}  
 		return(a.get(1));
 	}
+
+	public void action() {
+		new Thread().start();
+	}
 }
 
 
