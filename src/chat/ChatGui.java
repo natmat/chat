@@ -27,9 +27,8 @@ public class ChatGui {
 
 	}
 
-	ChatGui() {
-		buttonListener = new ButtonListener();
-		menuListener = new MenuListener();
+	private ChatGui() {
+		System.out.println("CTOR");
 	}
 
 	static void createAndShowGUI() {
@@ -46,14 +45,16 @@ public class ChatGui {
 		guiPanel.setLayout(new FlowLayout());		
 		guiFrame.add(guiPanel);	
 
-		addMenu(guiFrame);
 		addButtons(guiPanel);
+		addMenu(guiFrame);
 
 		guiFrame.pack();
 		guiFrame.setVisible(true);
 	}
 
 	private static void addButtons(final JPanel guiPanel) {
+		buttonListener = new ButtonListener();
+		
 		serverButton = new GuiButton("Server", buttonListener);
 		clientButton = new GuiButton("Client", buttonListener);
 		guiPanel.add(serverButton);
@@ -61,6 +62,8 @@ public class ChatGui {
 	}
 
 	private static void addMenu(final JFrame guiFrame) {
+		menuListener = new MenuListener();
+
 		JMenuBar menuBar = new JMenuBar();
 		JMenu startMenu = new JMenu("Start");
 		startMenu.setMnemonic(KeyEvent.VK_S);
@@ -96,8 +99,8 @@ public class ChatGui {
 			super.paintComponent(g);       
 		}  
 	}
-
-	class ButtonListener implements ActionListener {
+	
+	static class ButtonListener implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			GuiButton b = (GuiButton)e.getSource();
@@ -116,7 +119,7 @@ public class ChatGui {
 		}
 	}
 
-	class MenuListener implements ActionListener {
+	static class MenuListener implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			JMenuItem menuItem = (JMenuItem)e.getSource();
@@ -127,6 +130,8 @@ public class ChatGui {
 				break;
 			case "Client":
 				Chat.actionClient();
+				break;
+			default:
 				break;
 			}
 		}
