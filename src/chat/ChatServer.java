@@ -152,7 +152,10 @@ public class ChatServer implements Runnable {
 			ex.printStackTrace();
 		}
 
-		InetAddress ba = listOfBroadcasts.iterator().next();
+		InetAddress ba = null;
+		if (null == listOfBroadcasts.iterator()) {
+			ba = listOfBroadcasts.iterator().next();
+		}
 		return(ba);
 	}
 
@@ -162,12 +165,17 @@ public class ChatServer implements Runnable {
 	public static void startUDPBroadcast() {
 		isBeaconing = true;
 		setState();
-		
+
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				System.out.println("startUDPBroadcast");
 				InetAddress broadcastAddress = getBroadcastAddress();
+				if (null == broadcastAddress) {
+					System.out.println("ERROR: broadcastAddress null");
+					return;
+				}
+
 				DatagramSocket broadcastSocket = null;
 				try {
 					broadcastSocket = new DatagramSocket(8300);
@@ -196,13 +204,16 @@ public class ChatServer implements Runnable {
 	}
 
 	public static void startChatServer() {
-		Thread serverThread = new Thread(getInstance());
+		Thread serverThread = new Thread(ChatServer.getInstance());
 		serverThread.start();
 	}
 
 	@Override
 	public void run() {
-		System.out.println("Running server");
+		System.out.println("Starting server");
+
+		startUDPBroadcast();
+
 		while (true) {
 			try {
 				System.out.println("Waiting to accept...");
@@ -229,7 +240,7 @@ public class ChatServer implements Runnable {
 			System.out.println("Accepted...");
 			isConnected = true;
 			setState();
-			
+
 			boolean running = true;
 			while (running) {
 				running = (clientSockets.size() > 0);
@@ -285,12 +296,20 @@ public class ChatServer implements Runnable {
 		return (hostName);
 	}
 
-	public static void action() {
-		if (state == ServerState.IDLE) {
-			new Thread().start();
-		}
-		else {
-			// Stop the thread
+	public void handleEvent() {
+		switch(state) {
+		case IDLE: 
+			startChatServer();
+			break;
+		case ACTIVE:
+			// Stop server
+			break;
+		case CONNECTED:
+			// Terminate connection
+			break;
+		default:
+			// ERROR
+			break;
 		}
 	}
 }

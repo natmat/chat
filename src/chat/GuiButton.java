@@ -25,8 +25,4 @@ public class GuiButton extends JButton {
 	public void setStateColor(final Color color) {
 		this.setBackground(color);
 	}
-
-	public void press() {		
-		System.out.println("Press");
-	}
 }

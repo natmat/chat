@@ -32,9 +32,11 @@ public class ChatGui {
 	}
 
 	static void createAndShowGUI() {
+		System.out.println("createAndShowGUI");
 		try {
 			UIManager.setLookAndFeel( UIManager.getCrossPlatformLookAndFeelClassName() );
-		} catch (Exception e) {
+		} 
+		catch (Exception e) {
 			e.printStackTrace();
 		}
 
@@ -106,12 +108,10 @@ public class ChatGui {
 			GuiButton b = (GuiButton)e.getSource();
 			switch(b.getName()) {
 			case "Server":
-				ChatGui.serverButton.press();
-				Chat.actionServer();
+				Chat.serverEvent();
 				break;
 			case "Client":
-				ChatGui.clientButton.press();
-				Chat.actionClient();
+				Chat.clientEvent();
 				break;
 			default:
 				break;
@@ -126,10 +126,10 @@ public class ChatGui {
 			System.out.println("Name:" + menuItem.getName());
 			switch(menuItem.getName()) {
 			case "Server":
-				Chat.actionServer();
+				Chat.serverEvent();
 				break;
 			case "Client":
-				Chat.actionClient();
+				Chat.clientEvent();
 				break;
 			default:
 				break;
