@@ -21,6 +21,7 @@ public class ChatGui {
 	private static ButtonListener buttonListener;
 	private static GuiButton serverButton;
 	private static GuiButton clientButton;
+	private static GuiButton udpButton;
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -59,7 +60,9 @@ public class ChatGui {
 		
 		serverButton = new GuiButton("Server", buttonListener);
 		clientButton = new GuiButton("Client", buttonListener);
+		udpButton = new GuiButton("UDP", buttonListener);
 		guiPanel.add(serverButton);
+		guiPanel.add(udpButton);
 		guiPanel.add(clientButton);
 	}
 
@@ -113,6 +116,8 @@ public class ChatGui {
 			case "Client":
 				Chat.clientEvent();
 				break;
+			case "UDP":
+				Chat.udpEvent();
 			default:
 				break;
 			}
@@ -131,7 +136,8 @@ public class ChatGui {
 			case "Client":
 				Chat.clientEvent();
 				break;
-			default:
+			case "UDP":
+				Chat.udpEvent();
 				break;
 			}
 		}
@@ -140,5 +146,9 @@ public class ChatGui {
 
 	public static void setServerState(final Color stateColor) {
 		serverButton.setStateColor(stateColor);
+	}
+
+	public static void setUdpState(Color stateColor) {
+		udpButton.setBackground(stateColor);
 	};
 }

@@ -3,9 +3,11 @@ package chat;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 public class Chat {
+	private static final int MAX_CLIENT_COUNT = 1;
 	private static ChatServer server;
 	private static ArrayList<ChatClient> clientList;
 
@@ -28,17 +30,26 @@ public class Chat {
 	public Chat() {
 		System.out.println("Chat()");
 		server = ChatServer.getInstance();
-		clientList = new ArrayList<ChatClient>(1);
+		clientList = new ArrayList<ChatClient>();
 	}
 
 	public static void serverEvent() {
-		server.handleEvent();
+		server.handleServerEvent();
 	}
 
 	public static void clientEvent() {
-		ChatClient client = new ChatClient();
-		clientList.add(client);
-		client.action();
+		if (clientList.size() == MAX_CLIENT_COUNT) {
+			JOptionPane.showMessageDialog(null, "Max clients reached");
+		}
+		else {
+			ChatClient client = new ChatClient();
+			clientList.add(client);
+			client.startClient();
+		}
+	}
+
+	public static void udpEvent() {
+		server.handleUdpEvent();
 	}
 }
 

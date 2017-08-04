@@ -3,21 +3,11 @@ package chat;
 import java.awt.Color;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -41,17 +31,15 @@ public class ChatServer implements Runnable {
 	};
 	static ServerState state;
 	private static boolean isConnected;
+	private static boolean isRunning;
 
 	public static void main(String[] args) throws IOException {
 		instance = ChatServer.getInstance();
 
-		System.out.println("startChatServer");
 		startChatServer();
-
-		System.out.println("startUDPBroadcast");
 		startUDPBroadcast();
 
-		exitTimeout(10);
+//		exitTimeout(10);
 	}
 
 	private static void exitTimeout(int timeoutS) {
@@ -66,6 +54,8 @@ public class ChatServer implements Runnable {
 					e.printStackTrace();
 				}
 
+				System.out.println("TIMEOUT");
+				
 				ChatServer.getInstance();
 				if (ChatServer.clientSockets.isEmpty()) {
 					System.out.println("No clients connnected. EXIT");
@@ -116,47 +106,12 @@ public class ChatServer implements Runnable {
 				ChatGui.setServerState(Color.RED);
 			}
 			break;
+		case CONNECTED:
+			break;
 		default:
 			System.out.println("State ERROR");
 			break;
 		}
-	}
-
-	private static InetAddress getBroadcastAddress() {
-		HashSet<InetAddress> listOfBroadcasts = new HashSet<>();
-		Enumeration<NetworkInterface> list;
-		try {
-			list = NetworkInterface.getNetworkInterfaces();
-
-			while (list.hasMoreElements()) {
-				NetworkInterface iface = list.nextElement();
-				if (iface == null)
-					continue;
-
-				if (!iface.isLoopback() && iface.isUp()) {
-					Iterator<InterfaceAddress> it = iface.getInterfaceAddresses().iterator();
-					while (it.hasNext()) {
-						InterfaceAddress address = it.next();
-						if (address == null)
-							continue;
-
-						InetAddress broadcast = address.getBroadcast();
-						if (broadcast != null) {
-							listOfBroadcasts.add(broadcast);
-						}
-					}
-				}
-			}
-		} catch (SocketException ex) {
-			System.err.println("Error while getting network interfaces");
-			ex.printStackTrace();
-		}
-
-		InetAddress ba = null;
-		if (null == listOfBroadcasts.iterator()) {
-			ba = listOfBroadcasts.iterator().next();
-		}
-		return(ba);
 	}
 
 	/**
@@ -165,56 +120,28 @@ public class ChatServer implements Runnable {
 	public static void startUDPBroadcast() {
 		isBeaconing = true;
 		setState();
-
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				System.out.println("startUDPBroadcast");
-				InetAddress broadcastAddress = getBroadcastAddress();
-				if (null == broadcastAddress) {
-					System.out.println("ERROR: broadcastAddress null");
-					return;
-				}
-
-				DatagramSocket broadcastSocket = null;
-				try {
-					broadcastSocket = new DatagramSocket(8300);
-					broadcastSocket.setBroadcast(true);
-				} catch (SocketException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-
-				int i = 1;
-				while (ChatServer.clientSockets.size() == 0) {
-					byte[] buf = { (byte) i, (byte) i, (byte) i, (byte) i };
-					i++;
-					DatagramPacket packet = new DatagramPacket(buf, buf.length, broadcastAddress, 8300);
-					try {
-						System.out.println("packet " + i + ":" + Arrays.toString(packet.getData()));
-						broadcastSocket.send(packet);
-						Thread.sleep(1000);
-					} catch (InterruptedException | IOException e) {
-						e.printStackTrace();
-					}
-				}
-				broadcastSocket.close();
-			}
-		}).start();
+		new Thread(new UdpBroadcaster()).start();
 	}
+
+
 
 	public static void startChatServer() {
 		Thread serverThread = new Thread(ChatServer.getInstance());
 		serverThread.start();
 	}
 
+	private static void stopChatServer() {
+		isRunning = false;
+	}
+	
 	@Override
 	public void run() {
 		System.out.println("Starting server");
 
+		isRunning = true;
 		startUDPBroadcast();
 
-		while (true) {
+		while (isRunning) {
 			try {
 				System.out.println("Waiting to accept...");
 				Socket client = socketAccept.accept();
@@ -296,20 +223,38 @@ public class ChatServer implements Runnable {
 		return (hostName);
 	}
 
-	public void handleEvent() {
+	public void handleServerEvent() {
 		switch(state) {
 		case IDLE: 
 			startChatServer();
 			break;
 		case ACTIVE:
-			// Stop server
+			stopChatServer();
 			break;
 		case CONNECTED:
-			// Terminate connection
+			UdpBroadcaster.stop();
 			break;
 		default:
 			// ERROR
 			break;
 		}
+	}
+
+	public void handleUdpEvent() {
+		if (!isConnected) {
+			return;
+		}
+		
+		if (!isBeaconing) {
+			startUDPBroadcast();
+		}
+		else {
+			stopUDPBroadcast();
+		}
+		ChatGui.setUdpState(isBeaconing ? Color.GREEN : Color.RED);
+	}
+
+	private void stopUDPBroadcast() {
+		UdpBroadcaster.stop();
 	}
 }
