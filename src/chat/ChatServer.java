@@ -205,14 +205,15 @@ public class ChatServer implements Runnable {
 					}
 
 					System.out.print("Server> ");
-					System.out.println(msToHMS(System.currentTimeMillis()));
-					String msString = Long.toString(System.currentTimeMillis());
-					outStream.println(msString);
+					String hms = msToHMS(System.currentTimeMillis());
+					System.out.println(hms);
+					outStream.println(client.getPort() +":" + hms);
 
 					try {
-						Thread.sleep(500L);
+						Thread.sleep(1000L);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
+						running = false;
 					}
 				}
 			}
@@ -290,7 +291,7 @@ public class ChatServer implements Runnable {
 	
 	private String msToHMS(long ms) {
 		String hms = String.format("%02d:%02d:%02d", 
-				TimeUnit.MILLISECONDS.toHours(ms),
+				TimeUnit.MILLISECONDS.toHours(ms)%24,
 				TimeUnit.MILLISECONDS.toMinutes(ms) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(ms)),
 				TimeUnit.MILLISECONDS.toSeconds(ms) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(ms)));
 		return(hms);
