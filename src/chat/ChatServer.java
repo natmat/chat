@@ -12,6 +12,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import chat.ChatStates.ServerState;
+
 public class ChatServer implements Runnable {
 
 	private static ServerSocket socketAccept = null;
@@ -20,18 +22,11 @@ public class ChatServer implements Runnable {
 	private final static int clientPoolSize = 1;
 	private static ArrayList<Socket> clientSockets;
 	private static ChatServer instance = null; // Singleton
-	private static boolean isBeaconing;
-
 	public final static int acceptPort = 8304;
 
-	private static enum ServerState {
-		IDLE, 
-		ACTIVE,
-		CONNECTED
-	};
 	static ServerState state;
 	private static boolean isConnected;
-	private static boolean isRunning;
+	private static Thread serverThread;
 
 	public static void main(String[] args) throws IOException {
 		instance = ChatServer.getInstance();
@@ -39,7 +34,7 @@ public class ChatServer implements Runnable {
 		startChatServer();
 		startUDPBroadcast();
 
-//		exitTimeout(10);
+		exitTimeout(1000);
 	}
 
 	private static void exitTimeout(int timeoutS) {
@@ -72,12 +67,19 @@ public class ChatServer implements Runnable {
 		return (instance);
 	}
 
-	private ChatServer() {
+	ChatServer() {
+		isConnected = false;
 		state = ServerState.IDLE;
 		ChatGui.setServerState(Color.RED);
-		isConnected = false;
-		isBeaconing = false;
+		ChatGui.setUdpState(Color.RED);
+		
+		clientPool = Executors.newFixedThreadPool(clientPoolSize);
+		clientSockets = new ArrayList<>(clientPoolSize);
+		
+		newSocketAccept();
+	}
 
+	private void newSocketAccept() {
 		try {
 			socketAccept = new ServerSocket();
 			hostName = Inet4Address.getLocalHost().getHostName();
@@ -85,12 +87,10 @@ public class ChatServer implements Runnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		clientPool = Executors.newFixedThreadPool(clientPoolSize);
-		clientSockets = new ArrayList<>(clientPoolSize);
 	}
 
-	private static void setState() {
+	private static void updateState() {
+		System.out.println("State > " + state);
 		switch(state) {
 		case IDLE:
 			state = ServerState.ACTIVE;
@@ -107,57 +107,82 @@ public class ChatServer implements Runnable {
 			}
 			break;
 		case CONNECTED:
+			if (UdpBroadcaster.isBeaconing()) {
+				System.out.println("CONNECTED & beaconing!");
+			}
+			else {
+				state = ServerState.ACTIVE;
+				ChatGui.setServerState(Color.YELLOW);
+			}
 			break;
 		default:
 			System.out.println("State ERROR");
 			break;
 		}
+		System.out.println("State < " + state);
 	}
 
 	/**
 	 * Pulse UDP broadcast with increment byte[] data
 	 */
 	public static void startUDPBroadcast() {
-		isBeaconing = true;
-		setState();
+		updateState();
 		new Thread(new UdpBroadcaster()).start();
 	}
-
-
+	
+	public static void udpBroadcastStopped() {
+		updateState();
+	}
 
 	public static void startChatServer() {
-		Thread serverThread = new Thread(ChatServer.getInstance());
+		if ((null != serverThread) && serverThread.isAlive()) {
+			System.out.println("ERROR server alive");
+			return;
+		}
+		
+		serverThread = new Thread(ChatServer.getInstance());
 		serverThread.start();
 	}
 
 	private static void stopChatServer() {
-		isRunning = false;
+		if (UdpBroadcaster.isBeaconing()) {
+			UdpBroadcaster.stop();
+		}
+		
+		try {
+			socketAccept.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	@Override
 	public void run() {
 		System.out.println("Starting server");
-
-		isRunning = true;
-		startUDPBroadcast();
-
-		while (isRunning) {
+		isConnected = true;
+		updateState();
+		
+		if (socketAccept.isClosed()) {
+			newSocketAccept();
+		}
+		
+		while (isConnected) {
 			try {
 				System.out.println("Waiting to accept...");
 				Socket client = socketAccept.accept();
-				clientPool.execute(new Handler(client));
+				clientPool.execute(new ClientConnectionHandler(client));
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				System.out.println("socketAccept closed");
+				isConnected = false;
 				clientPool.shutdown();
 			}
-
 		}
+		updateState();
 	}
 
-	private class Handler implements Runnable {
+	private class ClientConnectionHandler implements Runnable {
 
-		public Handler(Socket acceptSocket) {
+		public ClientConnectionHandler(Socket acceptSocket) {
 			System.out.println("Handler socket: " + acceptSocket);
 			clientSockets.add(acceptSocket);
 		}
@@ -166,7 +191,7 @@ public class ChatServer implements Runnable {
 		public void run() {
 			System.out.println("Accepted...");
 			isConnected = true;
-			setState();
+			updateState();
 
 			boolean running = true;
 			while (running) {
@@ -179,9 +204,10 @@ public class ChatServer implements Runnable {
 						e.printStackTrace();
 					}
 
-					String msg = Long.toString(System.currentTimeMillis());
-					System.out.println("Server> " + msg);
-					outStream.println(msg);
+					System.out.print("Server> ");
+					System.out.println(msToHMS(System.currentTimeMillis()));
+					String msString = Long.toString(System.currentTimeMillis());
+					outStream.println(msString);
 
 					try {
 						Thread.sleep(500L);
@@ -210,6 +236,7 @@ public class ChatServer implements Runnable {
 	}
 
 	public static int getAcceptPort() {
+		System.out.println("SERVER: acceptPort=" + acceptPort);
 		return (acceptPort);
 	}
 
@@ -219,20 +246,18 @@ public class ChatServer implements Runnable {
 	 * @return host address
 	 */
 	public static String getHostName() {
-		System.out.println("hostName=" + hostName);
+		System.out.println("SERVER: hostName=" + hostName);
 		return (hostName);
 	}
 
-	public void handleServerEvent() {
+	public void handleGuiServerEvent() {
 		switch(state) {
 		case IDLE: 
 			startChatServer();
 			break;
 		case ACTIVE:
-			stopChatServer();
-			break;
 		case CONNECTED:
-			UdpBroadcaster.stop();
+			stopChatServer();
 			break;
 		default:
 			// ERROR
@@ -240,21 +265,34 @@ public class ChatServer implements Runnable {
 		}
 	}
 
-	public void handleUdpEvent() {
+	public void handleGuiUdpEvent() {
 		if (!isConnected) {
+			// Needs server connection or does nothing
+			System.out.println("SERVER !connected");
 			return;
 		}
 		
-		if (!isBeaconing) {
+		if (!UdpBroadcaster.isBeaconing()) {
 			startUDPBroadcast();
 		}
 		else {
 			stopUDPBroadcast();
 		}
-		ChatGui.setUdpState(isBeaconing ? Color.GREEN : Color.RED);
 	}
 
 	private void stopUDPBroadcast() {
 		UdpBroadcaster.stop();
 	}
+	
+	public ServerState getState() {
+		return(state);
+	}
+	
+	private String msToHMS(long ms) {
+		String hms = String.format("%02d:%02d:%02d", 
+				TimeUnit.MILLISECONDS.toHours(ms),
+				TimeUnit.MILLISECONDS.toMinutes(ms) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(ms)),
+				TimeUnit.MILLISECONDS.toSeconds(ms) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(ms)));
+		return(hms);
+	}		
 }

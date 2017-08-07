@@ -14,16 +14,16 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 final public class UdpBroadcaster implements Runnable {
-	private static boolean isBroadcasting = false;
+	private static boolean beaconing = false;
 	
 	@Override
 	public void run() {
-		if (isBroadcasting) {
+		if (beaconing) {
 			return;
 		}
 		
 		System.out.println("startUDPBroadcast");
-		isBroadcasting = true;
+		beaconing = true;
 		
 		InetAddress broadcastAddress = getBroadcastAddress();
 		if (null == broadcastAddress) {
@@ -36,11 +36,14 @@ final public class UdpBroadcaster implements Runnable {
 			broadcastSocket = new DatagramSocket(8300);
 			broadcastSocket.setBroadcast(true);
 		} catch (SocketException e1) {
+			System.out.println("ERROR no braodcast socket");
 			e1.printStackTrace();
+			return;
 		}
 
+		ChatGui.setUdpState(Color.GREEN);
 		int i = 1;
-		while (isBroadcasting) {
+		while (beaconing) {
 			byte[] buf = { (byte) i, (byte) i, (byte) i, (byte) i };
 			i++;
 			DatagramPacket packet = new DatagramPacket(buf, buf.length, broadcastAddress, 8304);
@@ -51,9 +54,10 @@ final public class UdpBroadcaster implements Runnable {
 			} catch (InterruptedException | IOException e) {
 				e.printStackTrace();
 			}
-		}
+		}		
 		broadcastSocket.close();
 		ChatGui.setUdpState(Color.RED);
+		ChatServer.udpBroadcastStopped();
 	}
 	
 	private static InetAddress getBroadcastAddress() {
@@ -77,7 +81,6 @@ final public class UdpBroadcaster implements Runnable {
 						InetAddress broadcast = address.getBroadcast();
 						if (broadcast != null) {
 							listOfBroadcasts.add(broadcast);
-							//							return(broadcast);
 						}
 					}
 				}
@@ -87,6 +90,7 @@ final public class UdpBroadcaster implements Runnable {
 			ex.printStackTrace();
 		}
 
+		// Return first (or any) BcastAddr
 		InetAddress ba = null;
 		if (null != listOfBroadcasts.iterator()) {
 			ba = listOfBroadcasts.iterator().next();
@@ -95,9 +99,13 @@ final public class UdpBroadcaster implements Runnable {
 	}
 
 	public static void stop() {
-		if (!isBroadcasting) {
+		if (!beaconing) {
 			System.out.println("ERROR: not braoadcasting");
 		}
-		isBroadcasting = false;
+		beaconing = false;
+	}
+
+	public static boolean isBeaconing() {
+		return(beaconing);
 	}
 }

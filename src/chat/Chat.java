@@ -34,7 +34,7 @@ public class Chat {
 	}
 
 	public static void serverEvent() {
-		server.handleServerEvent();
+		server.handleGuiServerEvent();
 	}
 
 	public static void clientEvent() {
@@ -42,14 +42,16 @@ public class Chat {
 			JOptionPane.showMessageDialog(null, "Max clients reached");
 		}
 		else {
-			ChatClient client = new ChatClient();
-			clientList.add(client);
-			client.startClient();
+			ChatClient.handleEvent();
 		}
 	}
 
 	public static void udpEvent() {
-		server.handleUdpEvent();
+		server.handleGuiUdpEvent();
+	}
+
+	public static void addClient(ChatClient client) {
+		clientList.add(client);
 	}
 }
 

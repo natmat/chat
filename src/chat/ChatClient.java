@@ -78,12 +78,8 @@ public class ChatClient implements Runnable {
 		broadcastSocket.close();
 	}
 
-	public ChatClient() {
-		try {
-			clientSocket = new Socket(ChatServer.getHostName(), ChatServer.getAcceptPort());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	public void connectClient() throws IOException {
+		clientSocket = new Socket(ChatServer.getHostName(), ChatServer.getAcceptPort());
 		System.out.println("clientSocket:" + clientSocket);
 	}
 
@@ -118,6 +114,20 @@ public class ChatClient implements Runnable {
 
 	public void startClient() {
 		new Thread().start();
+	}
+
+	public static void handleEvent() {
+		ChatClient client = new ChatClient();
+		try {
+			client.connectClient();
+			Chat.addClient(client);
+			client.startClient();
+		}
+		catch(IOException e) {
+			if (e.getMessage().equals("Connection Refused")) {
+				// Do nothing, server not accepting.
+			}
+		}
 	}
 }
 
