@@ -80,7 +80,7 @@ public class ChatClient implements Runnable {
 
 	public void connectClient() throws IOException {
 		clientSocket = new Socket(ChatServer.getHostName(), ChatServer.getAcceptPort());
-		System.out.println("clientSocket:" + clientSocket);
+		System.out.println("clientSocket: " + clientSocket);
 	}
 
 	@Override
@@ -120,7 +120,6 @@ public class ChatClient implements Runnable {
 		ChatClient client = new ChatClient();
 		try {
 			client.connectClient();
-			Chat.addClient(client);
 			client.startClient();
 		}
 		catch(IOException e) {
