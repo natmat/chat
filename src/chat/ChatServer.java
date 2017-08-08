@@ -94,6 +94,7 @@ public class ChatServer implements Runnable {
 	private static void updateState() {
 		System.out.println("State > " + state);
 		switch(state) {
+		// comment
 		case IDLE:
 			state = ServerState.ACTIVE;
 			ChatGui.setServerState(Color.YELLOW);
@@ -154,7 +155,6 @@ public class ChatServer implements Runnable {
 		try {
 			socketAccept.close();
 			transmitting = false;
-			updateState();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -179,7 +179,7 @@ public class ChatServer implements Runnable {
 				}
 				clientPool.execute(new ClientConnectionHandler(client));
 			} catch (IOException e) {
-				System.out.println("socketAccept closed");
+				System.out.println("socketAccept closed: " + e.getMessage());
 				active = false;
 				clientPool.shutdown();
 			}
