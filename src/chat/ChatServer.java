@@ -95,17 +95,14 @@ public class ChatServer implements Runnable {
 		System.out.println("State > " + state);
 		switch(state) {
 		case IDLE:
-			state = ServerState.ACTIVE;
-			ChatGui.setServerState(Color.YELLOW);
+			setState(ServerState.ACTIVE);
 			break;
 		case ACTIVE:
 			if (active) {
-				state = ServerState.CONNECTED;
-				ChatGui.setServerState(Color.GREEN);
+				setState(ServerState.CONNECTED);
 			}
 			else {
-				state = ServerState.IDLE;
-				ChatGui.setServerState(Color.RED);
+				setState(ServerState.IDLE);
 			}
 			break;
 		case CONNECTED:
@@ -113,8 +110,7 @@ public class ChatServer implements Runnable {
 				System.out.println("CONNECTED & beaconing!");
 			}
 			else {
-				state = ServerState.ACTIVE;
-				ChatGui.setServerState(Color.YELLOW);
+				setState(ServerState.ACTIVE);
 			}
 			break;
 		default:
@@ -153,6 +149,7 @@ public class ChatServer implements Runnable {
 
 		try {
 			socketAccept.close();
+			ChatGui.setClientCount(0);
 			transmitting = false;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -189,8 +186,9 @@ public class ChatServer implements Runnable {
 	private class ClientConnectionHandler implements Runnable {
 
 		public ClientConnectionHandler(Socket acceptSocket) {
-			System.out.println("Handler socket: " + acceptSocket);
+			System.out.println("Handler socket: " + acceptSocket.getPort());
 			clientSockets.add(acceptSocket);
+			ChatGui.setClientCount(clientSockets.size());
 		}
 
 		@Override
@@ -209,20 +207,19 @@ public class ChatServer implements Runnable {
 						e.printStackTrace();
 					}
 
-					System.out.print("Server> ");
-					String hms = msToHMS(System.currentTimeMillis());
-					System.out.println(hms);
-					outStream.println(client.getPort() +":" + hms);
+					long now = System.currentTimeMillis(); 
+					System.out.println("SERVER> " + client.getPort() + " : " + msToHMS(now));
+					outStream.println(now);
 				}
 				try {
-					Thread.sleep(1000L);
+					Thread.sleep(2000L);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 					transmitting = false;
 				}
 			}
 
-			closeClientSocket();
+			closeClientSockets();
 		}
 	}
 
@@ -241,11 +238,12 @@ public class ChatServer implements Runnable {
 		}
 	}
 
-	public void closeClientSocket() {
+	public void closeClientSockets() {
 		for (Iterator<Socket> it = clientSockets.iterator() ; it.hasNext() ; ) {
 			Socket client = it.next();
 			try {
 				client.close();
+				System.out.println("Sever closing client: " + client.getPort());
 				it.remove();
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -317,4 +315,22 @@ public class ChatServer implements Runnable {
 	public static int countClients() {
 		return(clientSockets.size());
 	}		
+
+	private static void setState(final ChatStates.ServerState inState) {
+		ChatServer.state = inState;
+		switch(inState) {
+		case IDLE:
+			ChatGui.setServerState(Color.RED);
+			break;
+		case ACTIVE:
+			ChatGui.setServerState(Color.YELLOW);
+			break;
+		case CONNECTED:
+			ChatGui.setServerState(Color.GREEN);
+			break;
+		default:
+			break;
+		}
+	}
 }
+

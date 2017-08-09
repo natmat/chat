@@ -19,9 +19,6 @@ public class ChatClient implements Runnable {
 	private boolean isAlive;
 
 	public static void main(String[] args) throws UnknownHostException, IOException {
-		//		ChatServer.startChatServer();
-		//		ChatServer.startUDPBroadcast();
-
 		ChatClient.findServer();
 		ChatClient client = new ChatClient();
 
@@ -47,7 +44,6 @@ public class ChatClient implements Runnable {
 		}
 
 		new Thread(new Runnable( ) {
-
 			@Override
 			public void run() {
 				try {
@@ -93,27 +89,37 @@ public class ChatClient implements Runnable {
 		}
 
 		String inputLine = null;
+		isAlive = true;
 		while (isAlive) {
 			try {
 				inputLine = br.readLine();
+				if (null == inputLine ) {
+					isAlive = false;
+					break;
+				}
+				System.out.println("inputLine: " + inputLine);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+			
 			long delta = System.currentTimeMillis() - Long.parseLong(inputLine);
 			System.out.println("client< " + delta + "ms\n");
 			if ("QUIT".equals(inputLine)) {
 				break;
 			}
 		}
+		
 		try {
 			br.close();
+			System.out.println("Client closing " + clientSocket.getPort());
+			clientSocket.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
 	public void startClient() {
-		new Thread().start();
+		new Thread(this).start();
 	}
 
 	public static void handleEvent() {
@@ -123,6 +129,7 @@ public class ChatClient implements Runnable {
 			client.startClient();
 		}
 		catch(IOException e) {
+			e.printStackTrace();
 			if (e.getMessage().equals("Connection Refused")) {
 				// Do nothing, server not accepting.
 			}

@@ -22,6 +22,7 @@ public class ChatGui {
 	private static GuiButton serverButton;
 	private static GuiButton clientButton;
 	private static GuiButton udpButton;
+	private static JFrame guiFrame;
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -41,7 +42,7 @@ public class ChatGui {
 			e.printStackTrace();
 		}
 
-		JFrame guiFrame = new JFrame("ChatServer");
+		guiFrame = new JFrame("ChatServer");
 		guiFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		JPanel guiPanel = new JPanel();
@@ -151,4 +152,10 @@ public class ChatGui {
 	public static void setUdpState(Color stateColor) {
 		udpButton.setBackground(stateColor);
 	};
+
+	
+	public static void setClientCount(int count) {
+		clientButton.setText("Client " + count);
+		guiFrame.pack();
+	}
 }
