@@ -133,11 +133,6 @@ public class ChatServer implements Runnable {
 	}
 
 	public static void startChatServer() {
-		if ((null != serverThread) && serverThread.isAlive()) {
-			System.out.println("ERROR server alive");
-			return;
-		}
-
 		serverThread = new Thread(ChatServer.getInstance());
 		serverThread.start();
 	}
@@ -148,6 +143,7 @@ public class ChatServer implements Runnable {
 		}
 
 		try {
+			serverThread.interrupt();
 			socketAccept.close();
 			ChatGui.setClientCount(0);
 			transmitting = false;
@@ -160,13 +156,13 @@ public class ChatServer implements Runnable {
 	public void run() {
 		System.out.println("Starting server");
 		active = true;
-		updateState();
+		updateState(); // idle > active
 
 		if (socketAccept.isClosed()) {
 			newSocketAccept();
 		}
 
-		while (active) {
+		while (!serverThread.isInterrupted()) {
 			try {
 				System.out.println("Waiting to accept...");
 				Socket client = socketAccept.accept();
@@ -175,9 +171,11 @@ public class ChatServer implements Runnable {
 				}
 				clientPool.execute(new ClientConnectionHandler(client));
 			} catch (IOException e) {
-				System.out.println("socketAccept closed: " + e.getMessage());
-				active = false;
+				e.printStackTrace();
+			}
+			finally {
 				clientPool.shutdown();
+				active = false;
 			}
 		}
 		updateState();
@@ -197,8 +195,7 @@ public class ChatServer implements Runnable {
 			active = true;
 			updateState();
 
-			transmitting = true;
-			while (transmitting) {
+			while (!serverThread.isInterrupted()) {
 				for (Socket client : clientSockets) {
 					PrintStream outStream = null;
 					try {
@@ -212,10 +209,9 @@ public class ChatServer implements Runnable {
 					outStream.println(now);
 				}
 				try {
-					Thread.sleep(2000L);
+					Thread.sleep(4000L);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
-					transmitting = false;
 				}
 			}
 

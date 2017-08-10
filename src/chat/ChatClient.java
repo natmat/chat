@@ -130,9 +130,9 @@ public class ChatClient implements Runnable {
 		}
 		catch(IOException e) {
 			e.printStackTrace();
-			if (e.getMessage().equals("Connection Refused")) {
-				// Do nothing, server not accepting.
-			}
+//			if (e.getMessage().equals("Connection refused")) {
+//				System.out.println("ERROR " + e.getMessage());
+//			}
 		}
 	}
 }
