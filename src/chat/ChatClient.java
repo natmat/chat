@@ -76,13 +76,13 @@ public class ChatClient implements Runnable {
 
 	public void connectClient() throws IOException {
 		clientSocket = new Socket(ChatServer.getHostName(), ChatServer.getAcceptPort());
-		System.out.println("clientSocket: " + clientSocket);
 	}
 
 	@Override
 	public void run() {
 		BufferedReader br = null;
 		try {
+			System.out.println("clientSocket localPort: " + clientSocket.getLocalPort());
 			br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -99,7 +99,10 @@ public class ChatClient implements Runnable {
 				}
 				System.out.println("inputLine: " + inputLine);
 			} catch (IOException e) {
-				e.printStackTrace();
+				System.out.println("Client: " + clientSocket.getPort());
+				if (!e.getMessage().equals(ChatCommon.connectionReset)) {
+					e.printStackTrace();
+				}
 			}
 			
 			long delta = System.currentTimeMillis() - Long.parseLong(inputLine);

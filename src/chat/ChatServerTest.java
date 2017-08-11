@@ -5,7 +5,7 @@ import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import chat.ChatStates.ServerState;
+import chat.ChatCommon.ServerState;
 
 public class ChatServerTest {
 

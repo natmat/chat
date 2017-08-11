@@ -28,6 +28,7 @@ final public class UdpBroadcaster implements Runnable {
 		InetAddress broadcastAddress = getBroadcastAddress();
 		if (null == broadcastAddress) {
 			System.out.println("ERROR: broadcastAddress null");
+			beaconing = false;
 			return;
 		}
 
@@ -35,9 +36,10 @@ final public class UdpBroadcaster implements Runnable {
 		try {
 			broadcastSocket = new DatagramSocket(8300);
 			broadcastSocket.setBroadcast(true);
-		} catch (SocketException e1) {
+		} catch (SocketException e) {
 			System.out.println("ERROR no braodcast socket");
-			e1.printStackTrace();
+			e.printStackTrace();
+			beaconing = false;
 			return;
 		}
 
@@ -53,6 +55,7 @@ final public class UdpBroadcaster implements Runnable {
 				Thread.sleep(1000);
 			} catch (InterruptedException | IOException e) {
 				e.printStackTrace();
+				beaconing = false;
 			}
 		}		
 		broadcastSocket.close();

@@ -13,7 +13,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import chat.ChatStates.ServerState;
+import chat.ChatCommon.ServerEvent;
+import chat.ChatCommon.ServerState;
 
 public class ChatServer implements Runnable {
 
@@ -21,7 +22,7 @@ public class ChatServer implements Runnable {
 	private ExecutorService clientPool;
 	public static boolean transmitting;
 	private static String hostName;
-	private final static int clientPoolSize = 2;
+	private final static int clientPoolSize = 10;
 	private static ArrayList<Socket> clientSockets;
 	private static ChatServer instance = null; // Singleton
 	public final static int acceptPort = 8304;
@@ -47,7 +48,6 @@ public class ChatServer implements Runnable {
 				try {
 					Thread.sleep(1000 * timeoutS);
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
@@ -91,7 +91,7 @@ public class ChatServer implements Runnable {
 		}
 	}
 
-	private static void updateState() {
+	private static void serverEvent(final ServerEvent event) {
 		System.out.println("State > " + state);
 		switch(state) {
 		case IDLE:
@@ -124,12 +124,12 @@ public class ChatServer implements Runnable {
 	 * Pulse UDP broadcast with increment byte[] data
 	 */
 	public static void startUDPBroadcast() {
-		updateState();
+		serverEvent(ServerEvent.BROADCASTING_START);
 		new Thread(new UdpBroadcaster()).start();
 	}
 
 	public static void udpBroadcastStopped() {
-		updateState();
+		serverEvent(ServerEvent.BROADCASTING_STOP);
 	}
 
 	public static void startChatServer() {
@@ -155,47 +155,44 @@ public class ChatServer implements Runnable {
 	@Override
 	public void run() {
 		System.out.println("Starting server");
-		active = true;
-		updateState(); // idle > active
 
 		if (socketAccept.isClosed()) {
 			newSocketAccept();
 		}
 
-		while (!serverThread.isInterrupted()) {
+		boolean accepting = true;
+		while (accepting) {
 			try {
 				System.out.println("Waiting to accept...");
+				serverEvent(ServerEvent.ACCEPT_OPEN); // idle > active
 				Socket client = socketAccept.accept();
 				if (!clientPool.isShutdown()) {
 					clientPool = Executors.newFixedThreadPool(clientPoolSize);
 				}
+				System.out.println("S: accepted " + client.getPort());
 				clientPool.execute(new ClientConnectionHandler(client));
 			} catch (IOException e) {
 				e.printStackTrace();
-			}
-			finally {
+				accepting = false;
 				clientPool.shutdown();
-				active = false;
 			}
 		}
-		updateState();
+		serverEvent(ServerEvent.ACCEPT_SHUT);
 	}
 
 	private class ClientConnectionHandler implements Runnable {
 
 		public ClientConnectionHandler(Socket acceptSocket) {
-			System.out.println("Handler socket: " + acceptSocket.getPort());
 			clientSockets.add(acceptSocket);
 			ChatGui.setClientCount(clientSockets.size());
 		}
 
 		@Override
 		public void run() {
-			System.out.println("Accepted...");
-			active = true;
-			updateState();
+			serverEvent(ServerEvent.CLIENT_CONNECT);
 
-			while (!serverThread.isInterrupted()) {
+			boolean transmitting = true;
+			while (transmitting) {
 				for (Socket client : clientSockets) {
 					PrintStream outStream = null;
 					try {
@@ -212,6 +209,7 @@ public class ChatServer implements Runnable {
 					Thread.sleep(4000L);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
+					transmitting = false;
 				}
 			}
 
@@ -248,7 +246,6 @@ public class ChatServer implements Runnable {
 	}
 
 	public static int getAcceptPort() {
-		System.out.println("SERVER: acceptPort=" + acceptPort);
 		return (acceptPort);
 	}
 
@@ -258,7 +255,6 @@ public class ChatServer implements Runnable {
 	 * @return host address
 	 */
 	public static String getHostName() {
-		System.out.println("SERVER: hostName=" + hostName);
 		return (hostName);
 	}
 
@@ -312,7 +308,7 @@ public class ChatServer implements Runnable {
 		return(clientSockets.size());
 	}		
 
-	private static void setState(final ChatStates.ServerState inState) {
+	private static void setState(final ChatCommon.ServerState inState) {
 		ChatServer.state = inState;
 		switch(inState) {
 		case IDLE:
@@ -327,6 +323,10 @@ public class ChatServer implements Runnable {
 		default:
 			break;
 		}
+	}
+	
+	public static int getClientPoolSize() {
+		return(clientPoolSize);
 	}
 }
 

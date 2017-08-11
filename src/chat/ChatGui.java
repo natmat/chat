@@ -146,7 +146,7 @@ public class ChatGui {
 
 
 	public static void setServerState(final Color stateColor) {
-		serverButton.setStateColor(stateColor);
+		serverButton.setBackground(stateColor);
 	}
 
 	public static void setUdpState(Color stateColor) {

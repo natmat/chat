@@ -15,14 +15,11 @@ public class GuiButton extends JButton {
 	public GuiButton(final String name, final ActionListener listener) {
 		super(name);
 		
-		this.setActionCommand(name);
+		setActionCommand(name);
 		setName(name);
-		this.setOpaque(true);
+		setOpaque(true);
+		setBackground(Color.RED);
 
 		this.addActionListener(listener);
-	}
-
-	public void setStateColor(final Color color) {
-		this.setBackground(color);
 	}
 }
