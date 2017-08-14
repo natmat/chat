@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -44,6 +45,8 @@ public class ChatGui {
 
 		guiFrame = new JFrame("ChatServer");
 		guiFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+		guiFrame.setLocation(screen.width - 300, screen.height - 200);
 
 		JPanel guiPanel = new JPanel();
 		guiPanel.setLayout(new FlowLayout());		
@@ -157,5 +160,9 @@ public class ChatGui {
 	public static void setClientCount(int count) {
 		clientButton.setText("Client " + count);
 		guiFrame.pack();
+	}
+
+	public static void setClientState(Color colour) {
+		clientButton.setBackground(colour);
 	}
 }

@@ -1,12 +1,19 @@
 package chat;
 
 import java.awt.Color;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
+import java.net.DatagramPacket;
 import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
@@ -19,7 +26,7 @@ import chat.ChatCommon.ServerState;
 public class ChatServer implements Runnable {
 
 	private static ServerSocket socketAccept = null;
-	private ExecutorService clientPool;
+	private static ExecutorService clientPool;
 	public static boolean transmitting;
 	private static String hostName;
 	private final static int clientPoolSize = 10;
@@ -37,7 +44,7 @@ public class ChatServer implements Runnable {
 		startChatServer();
 		startUDPBroadcast();
 
-		exitTimeout(1000);
+		exitTimeout(3600);
 	}
 
 	private static void exitTimeout(final int timeoutS) {
@@ -92,32 +99,40 @@ public class ChatServer implements Runnable {
 	}
 
 	private static void serverEvent(final ServerEvent event) {
-		System.out.println("State > " + state);
+		System.out.println("State >  " + state);
 		switch(state) {
 		case IDLE:
 			setState(ServerState.ACTIVE);
 			break;
+
 		case ACTIVE:
-			if (active) {
-				setState(ServerState.CONNECTED);
-			}
-			else {
-				setState(ServerState.IDLE);
+			switch(event) {
+			case CLIENT_CONNECT:
+				setState(ServerState.CONNECTED);				
+				break;
+			case ACCEPT_CLOSED:
+				setState(ServerState.IDLE);				
+				break;
+			default:
+				break;
 			}
 			break;
+
 		case CONNECTED:
-			if (UdpBroadcaster.isBeaconing()) {
-				System.out.println("CONNECTED & beaconing!");
+			switch(event) {
+			case ACCEPT_CLOSED:
+				setState(ServerState.IDLE);
+				break;
+			default:
+				break;
 			}
-			else {
-				setState(ServerState.ACTIVE);
-			}
-			break;
+			break;			
+
 		default:
 			System.out.println("State ERROR");
 			break;
 		}
-		System.out.println("State < " + state);
+		System.out.println("State >> " + state + "\n");
 	}
 
 	/**
@@ -125,7 +140,17 @@ public class ChatServer implements Runnable {
 	 */
 	public static void startUDPBroadcast() {
 		serverEvent(ServerEvent.BROADCASTING_START);
-		new Thread(new UdpBroadcaster()).start();
+		//		new Thread(new UdpBroadcaster()).start();
+		byte sn = 1;
+		while (true) {
+			writeMACFrame(sn++);
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 
 	public static void udpBroadcastStopped() {
@@ -143,10 +168,8 @@ public class ChatServer implements Runnable {
 		}
 
 		try {
-			serverThread.interrupt();
+			//			serverThread.interrupt();
 			socketAccept.close();
-			ChatGui.setClientCount(0);
-			transmitting = false;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -154,36 +177,42 @@ public class ChatServer implements Runnable {
 
 	@Override
 	public void run() {
-		System.out.println("Starting server");
+		System.out.println("S: started");
 
 		if (socketAccept.isClosed()) {
 			newSocketAccept();
 		}
+		serverEvent(ServerEvent.ACCEPT_OPEN); // idle > active
 
 		boolean accepting = true;
 		while (accepting) {
 			try {
-				System.out.println("Waiting to accept...");
-				serverEvent(ServerEvent.ACCEPT_OPEN); // idle > active
+				System.out.println("S: waiting to accept");
 				Socket client = socketAccept.accept();
-				if (!clientPool.isShutdown()) {
-					clientPool = Executors.newFixedThreadPool(clientPoolSize);
-				}
-				System.out.println("S: accepted " + client.getPort());
+				clientPool = Executors.newFixedThreadPool(clientPoolSize);
 				clientPool.execute(new ClientConnectionHandler(client));
 			} catch (IOException e) {
-				e.printStackTrace();
+				System.out.println("Server running E: " + e.getMessage());
+				if (!e.getMessage().toUpperCase().equals(ChatCommon.SOCKET_CLOSED)) {
+					e.printStackTrace();
+				}				
+
 				accepting = false;
-				clientPool.shutdown();
+				shutdownAndAwaitTermination(clientPool);
 			}
 		}
-		serverEvent(ServerEvent.ACCEPT_SHUT);
+		serverEvent(ServerEvent.ACCEPT_CLOSED);
+		ChatGui.setClientCount(0);
 	}
 
 	private class ClientConnectionHandler implements Runnable {
+		private Socket client;
 
-		public ClientConnectionHandler(Socket acceptSocket) {
-			clientSockets.add(acceptSocket);
+		public ClientConnectionHandler(Socket newClient) {
+			System.out.println("\nS: new client " + newClient.getLocalPort() + ">" + newClient.getPort());
+			this.client = newClient;
+
+			clientSockets.add(newClient);
 			ChatGui.setClientCount(clientSockets.size());
 		}
 
@@ -193,43 +222,49 @@ public class ChatServer implements Runnable {
 
 			boolean transmitting = true;
 			while (transmitting) {
-				for (Socket client : clientSockets) {
-					PrintStream outStream = null;
-					try {
-						outStream = new PrintStream(client.getOutputStream());
-					} catch (IOException e) {
+				PrintStream outStream = null;
+				try {
+					outStream = new PrintStream(client.getOutputStream());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+
+				String now = String.valueOf(System.currentTimeMillis()/1E6);
+
+				System.out.println("S: " + now + " > " + client.getPort() );
+				outStream.println(now);
+
+				try {
+					Thread.sleep(5000L);
+				} catch (InterruptedException e) {
+					if (!e.getMessage().equals(ChatCommon.SLEEP_INTERRUPTED)) {
 						e.printStackTrace();
 					}
-
-					long now = System.currentTimeMillis(); 
-					System.out.println("SERVER> " + client.getPort() + " : " + msToHMS(now));
-					outStream.println(now);
-				}
-				try {
-					Thread.sleep(4000L);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
 					transmitting = false;
 				}
 			}
 
-			closeClientSockets();
+			try {
+				System.out.println("S close client: " + client.getPort());
+				client.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
-	void shutdownAndAwaitTermination(ExecutorService pool) {
+	private static void shutdownAndAwaitTermination(ExecutorService pool) {
+		pool.shutdown();
 		try {
-			if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
-				pool.shutdown();
-				if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
-					System.err.println("Pool did not terminate");
+			while (!pool.isShutdown()) {
+				if (!pool.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
+					System.err.println("Pool awaitTerminatation...");
 				}
 			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-			pool.shutdownNow();
-			Thread.currentThread().interrupt();
 		}
+		pool.shutdownNow();
 	}
 
 	public void closeClientSockets() {
@@ -274,12 +309,6 @@ public class ChatServer implements Runnable {
 	}
 
 	public void handleGuiUdpEvent() {
-		if (!active) {
-			// Needs server connection or does nothing
-			System.out.println("SERVER !connected");
-			return;
-		}
-
 		if (!UdpBroadcaster.isBeaconing()) {
 			startUDPBroadcast();
 		}
@@ -324,9 +353,83 @@ public class ChatServer implements Runnable {
 			break;
 		}
 	}
-	
+
 	public static int getClientPoolSize() {
 		return(clientPoolSize);
+	}
+
+	public static void writeMACFrame(byte seq) {
+		BufferedOutputStream bufferedOutputStream = null;
+		InputStream inputStream = null;
+		OutputStream outputStream = null;
+		MulticastSocket server = null;
+		InetAddress group = null;
+		try {
+			group = InetAddress.getByName("239.0.0.1");
+		} catch (UnknownHostException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+
+		try {
+			System.setProperty("java.net.preferIPv4Stack", "true");
+			server = new MulticastSocket(8305);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		try {
+			server.joinGroup(group);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		byte[] header = {0x53, 0x41, 0x4D, 0x50, 0x4C, 0x45}; // SAMPLE
+
+		Byte[] frameControl = new Byte[] {0x01, 0x02};
+		Byte sequenceNumber = Byte.valueOf(seq);
+		//		Byte destinationPANID = 3;
+		//		Byte destinationAddress = 4;
+		//		Byte sourcePANID = 5;
+		//		Byte sourceAddress = 6;
+		//		Byte framePayload = 7;
+		//		Byte fcs = 8;
+
+		// Write MAC frame to socket
+		DatagramPacket datagram = new DatagramPacket(header, header.length, group, 8305);
+
+		try {
+			
+			bufferedOutputStream.write(header);
+			bufferedOutputStream.write(byteArrayToInt(frameControl));
+			bufferedOutputStream.write(sequenceNumber);
+			bufferedOutputStream.flush();
+		}
+		catch(IOException e) {
+			e.printStackTrace();
+		}
+
+		server.close();
+	}
+
+	private static final int byteArrayToInt(final Byte[] inArray) {
+		int result = 0;
+		int shift = 0;
+		for (int i = 0 ; i < inArray.length ; i++) {
+			result += (inArray[i] << shift);
+			shift += 8;
+		}
+		return result;
+	}
+
+	// Writes provided 4-byte integer to a 4 element byte array in Little-Endian order.
+	public static final byte[] intTo4ByteArray(final int value) {
+		return new byte[] {
+				(byte)(value & 0xff),
+				(byte)(value >> 8 & 0xff),
+				(byte)(value >> 16 & 0xff),
+				(byte)(value >>> 24)
+		};
 	}
 }
 
