@@ -2,8 +2,10 @@ package chat;
 
 import java.awt.Color;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.DatagramPacket;
@@ -22,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import chat.ChatCommon.ServerEvent;
 import chat.ChatCommon.ServerState;
+import sun.security.jca.GetInstance;
 
 public class ChatServer implements Runnable {
 
@@ -142,7 +145,7 @@ public class ChatServer implements Runnable {
 		serverEvent(ServerEvent.BROADCASTING_START);
 		//		new Thread(new UdpBroadcaster()).start();
 		byte sn = 1;
-		while (true) {
+		while (true) {	
 			writeMACFrame(sn++);
 			try {
 				Thread.sleep(5000);
@@ -359,9 +362,6 @@ public class ChatServer implements Runnable {
 	}
 
 	public static void writeMACFrame(byte seq) {
-		BufferedOutputStream bufferedOutputStream = null;
-		InputStream inputStream = null;
-		OutputStream outputStream = null;
 		MulticastSocket server = null;
 		InetAddress group = null;
 		try {
@@ -381,31 +381,23 @@ public class ChatServer implements Runnable {
 		try {
 			server.joinGroup(group);
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-		byte[] header = {0x53, 0x41, 0x4D, 0x50, 0x4C, 0x45}; // SAMPLE
 
-		Byte[] frameControl = new Byte[] {0x01, 0x02};
-		Byte sequenceNumber = Byte.valueOf(seq);
-		//		Byte destinationPANID = 3;
-		//		Byte destinationAddress = 4;
-		//		Byte sourcePANID = 5;
-		//		Byte sourceAddress = 6;
-		//		Byte framePayload = 7;
-		//		Byte fcs = 8;
 
 		// Write MAC frame to socket
-		DatagramPacket datagram = new DatagramPacket(header, header.length, group, 8305);
-
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream oos;
 		try {
+			oos = new ObjectOutputStream(baos);
+			oos.writeObject(new MACFrame());
+			byte[] data = baos.toByteArray();
+			DatagramPacket sendPacket = new DatagramPacket(
+					data, data.length, InetAddress.getLoopbackAddress(), 8305);
+					
 			
-			bufferedOutputStream.write(header);
-			bufferedOutputStream.write(byteArrayToInt(frameControl));
-			bufferedOutputStream.write(sequenceNumber);
-			bufferedOutputStream.flush();
-		}
-		catch(IOException e) {
+			baos.flush();
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
@@ -430,6 +422,21 @@ public class ChatServer implements Runnable {
 				(byte)(value >> 16 & 0xff),
 				(byte)(value >>> 24)
 		};
+	}
+
+	private static class MACFrame {
+		byte[] header = {0x12, 0x34, 0x56, 0x78};
+		Byte[] frameControl = new Byte[] {0x01, 0x02};
+		Byte sequenceNumber = 1;
+		Byte destinationPANID = 2;
+		Byte destinationAddress = 3;
+		Byte sourcePANID = 4;
+		Byte sourceAddress = 5;
+		Byte framePayload = 6;
+		Byte fcs = 7;			
+
+		public MACFrame() {
+		}
 	}
 }
 
