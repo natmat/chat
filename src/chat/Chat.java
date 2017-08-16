@@ -5,7 +5,6 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 public class Chat {
-	private static final int MAX_CLIENT_COUNT = 1;
 	private static ChatServer server;
 
 	public static void main(String[] args) {
@@ -34,7 +33,7 @@ public class Chat {
 	}
 
 	public static void clientEvent() {
-		if (ChatServer.countClients() == MAX_CLIENT_COUNT) {
+		if (ChatServer.countClients() == ChatServer.getClientPoolSize()) {
 			JOptionPane.showMessageDialog(null, "Max clients reached");
 		}
 		else {
@@ -43,7 +42,11 @@ public class Chat {
 	}
 
 	public static void udpEvent() {
-		server.handleGuiUdpEvent();
+		server.handleGUIUDPEvent();
+	}
+
+	public static void macEvent() {
+		server.handleGuiMACEvent();		
 	}
 }
 

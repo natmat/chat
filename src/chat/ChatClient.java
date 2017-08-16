@@ -1,5 +1,6 @@
 package chat;
 
+import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -11,12 +12,20 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
+import chat.ChatCommon.ClientEvent;
+import chat.ChatCommon.ClientState;
+
 public class ChatClient implements Runnable {
 
 	private static String serverAddress;
 	private static DatagramSocket broadcastSocket;
 	private Socket clientSocket = null;
-	private boolean isAlive;
+	private String name;
+	private ChatCommon.ClientState state;
+	
+	public ChatClient() {
+		state = ClientState.IDLE;
+	}
 
 	public static void main(String[] args) throws UnknownHostException, IOException {
 		ChatClient.findServer();
@@ -76,48 +85,63 @@ public class ChatClient implements Runnable {
 
 	public void connectClient() throws IOException {
 		clientSocket = new Socket(ChatServer.getHostName(), ChatServer.getAcceptPort());
-		System.out.println("clientSocket: " + clientSocket);
+		clientEvent(ClientEvent.CONNECTED);
 	}
 
 	@Override
 	public void run() {
+
 		BufferedReader br = null;
 		try {
+			name = String.valueOf(clientSocket.getLocalPort());
+			System.out.println(name);
 			br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
 		String inputLine = null;
-		isAlive = true;
-		while (isAlive) {
+		boolean connected = true;
+		while (connected) {
+			clientEvent(ClientEvent.WAITING);
 			try {
 				inputLine = br.readLine();
 				if (null == inputLine ) {
-					isAlive = false;
+					connected = false;
 					break;
 				}
-				System.out.println("inputLine: " + inputLine);
+								
+				clientEvent(ClientEvent.READING);
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				System.out.println("C: " + inputLine + " * " + name);
 			} catch (IOException e) {
-				e.printStackTrace();
+				System.out.println("Client: " + clientSocket.getPort() + " " + e.getMessage());
+				if (!e.getMessage().toUpperCase().equals(ChatCommon.CONNECTION_REFUSED)) {
+					e.printStackTrace();
+				}
 			}
-			
-			long delta = System.currentTimeMillis() - Long.parseLong(inputLine);
-			System.out.println("client< " + delta + "ms\n");
+
+			double delta = System.currentTimeMillis() - Double.parseDouble(inputLine)*1E6;
+			System.out.println("C: delta " + delta + "us\n");
 			if ("QUIT".equals(inputLine)) {
 				break;
 			}
 		}
-		
+
+		System.out.println("C: closing " + clientSocket.getLocalPort());
 		try {
-			br.close();
-			System.out.println("Client closing " + clientSocket.getPort());
 			clientSocket.close();
+			br.close();
+			ChatGui.setClientState(Color.RED);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-
+	
 	public void startClient() {
 		new Thread(this).start();
 	}
@@ -129,11 +153,35 @@ public class ChatClient implements Runnable {
 			client.startClient();
 		}
 		catch(IOException e) {
-			e.printStackTrace();
-			if (e.getMessage().equals("Connection Refused")) {
-				// Do nothing, server not accepting.
+			System.out.println("C: " + e.getMessage());
+			if (!e.getMessage().toUpperCase().equals(ChatCommon.CONNECTION_REFUSED)) {
+				e.printStackTrace();
 			}
 		}
+	}
+
+	private void clientEvent(ClientEvent ev) {
+		switch(state){
+		case IDLE:
+			state = ClientState.CONNECTED;
+			ChatGui.setClientState(Color.YELLOW);
+			break;
+		case CONNECTED:
+			switch(ev) {
+			case WAITING:
+				ChatGui.setClientState(Color.YELLOW);
+				break;
+			case READING:
+				ChatGui.setClientState(Color.GREEN);
+				break;
+			default:
+				break;
+			}
+			break;
+		default:
+			break;
+		}
+
 	}
 }
 

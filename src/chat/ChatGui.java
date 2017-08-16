@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -23,6 +24,7 @@ public class ChatGui {
 	private static GuiButton clientButton;
 	private static GuiButton udpButton;
 	private static JFrame guiFrame;
+	private static GuiButton macButton;
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -44,6 +46,8 @@ public class ChatGui {
 
 		guiFrame = new JFrame("ChatServer");
 		guiFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+		guiFrame.setLocation(screen.width - 300, screen.height - 200);
 
 		JPanel guiPanel = new JPanel();
 		guiPanel.setLayout(new FlowLayout());		
@@ -60,10 +64,12 @@ public class ChatGui {
 		buttonListener = new ButtonListener();
 		
 		serverButton = new GuiButton("Server", buttonListener);
-		clientButton = new GuiButton("Client", buttonListener);
 		udpButton = new GuiButton("UDP", buttonListener);
+		macButton = new GuiButton("MAC", buttonListener);
+		clientButton = new GuiButton("Client", buttonListener);
 		guiPanel.add(serverButton);
 		guiPanel.add(udpButton);
+		guiPanel.add(macButton);
 		guiPanel.add(clientButton);
 	}
 
@@ -119,6 +125,10 @@ public class ChatGui {
 				break;
 			case "UDP":
 				Chat.udpEvent();
+				break;
+			case "MAC":
+				Chat.macEvent();
+				break;
 			default:
 				break;
 			}
@@ -146,7 +156,7 @@ public class ChatGui {
 
 
 	public static void setServerState(final Color stateColor) {
-		serverButton.setStateColor(stateColor);
+		serverButton.setBackground(stateColor);
 	}
 
 	public static void setUdpState(Color stateColor) {
@@ -157,5 +167,9 @@ public class ChatGui {
 	public static void setClientCount(int count) {
 		clientButton.setText("Client " + count);
 		guiFrame.pack();
+	}
+
+	public static void setClientState(Color colour) {
+		clientButton.setBackground(colour);
 	}
 }
