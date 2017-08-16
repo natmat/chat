@@ -1,9 +1,15 @@
 package chat;
 
 import java.awt.Color;
+<<<<<<< HEAD
+=======
+import java.io.BufferedOutputStream;
+>>>>>>> branch 'master' of https://github.com/natmat/chat.git
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -115,6 +121,10 @@ public class ChatClient implements Runnable {
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
+<<<<<<< HEAD
+=======
+					// TODO Auto-generated catch block
+>>>>>>> branch 'master' of https://github.com/natmat/chat.git
 					e.printStackTrace();
 				}
 				System.out.println("C: " + inputLine + " * " + name);
