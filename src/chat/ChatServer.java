@@ -1,32 +1,17 @@
 package chat;
 
 import java.awt.Color;
-<<<<<<< HEAD
-=======
-import java.io.BufferedOutputStream;
->>>>>>> branch 'master' of https://github.com/natmat/chat.git
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.DatagramPacket;
-<<<<<<< HEAD
 import java.net.DatagramSocket;
-=======
->>>>>>> branch 'master' of https://github.com/natmat/chat.git
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.MulticastSocket;
 import java.net.ServerSocket;
 import java.net.Socket;
-<<<<<<< HEAD
 import java.net.SocketException;
-=======
-import java.net.UnknownHostException;
->>>>>>> branch 'master' of https://github.com/natmat/chat.git
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
@@ -35,10 +20,6 @@ import java.util.concurrent.TimeUnit;
 
 import chat.ChatCommon.ServerEvent;
 import chat.ChatCommon.ServerState;
-<<<<<<< HEAD
-=======
-import sun.security.jca.GetInstance;
->>>>>>> branch 'master' of https://github.com/natmat/chat.git
 
 public class ChatServer implements Runnable {
 
@@ -150,7 +131,6 @@ public class ChatServer implements Runnable {
 			break;
 		}
 		System.out.println("State >> " + state + "\n");
-<<<<<<< HEAD
 	}
 
 	public static class MacFrameRunnable implements Runnable {
@@ -194,8 +174,6 @@ public class ChatServer implements Runnable {
 		
 		macFrameThread = new Thread(new MacFrameRunnable());
 		macFrameThread.start();
-=======
->>>>>>> branch 'master' of https://github.com/natmat/chat.git
 	}
 
 	/**
@@ -203,21 +181,7 @@ public class ChatServer implements Runnable {
 	 */
 	public static void startUDPBroadcast() {
 		serverEvent(ServerEvent.BROADCASTING_START);
-<<<<<<< HEAD
 		new Thread(new UdpBroadcaster()).start();
-=======
-		//		new Thread(new UdpBroadcaster()).start();
-		byte sn = 1;
-		while (true) {	
-			writeMACFrame(sn++);
-			try {
-				Thread.sleep(5000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
->>>>>>> branch 'master' of https://github.com/natmat/chat.git
 	}
 
 	public static void udpBroadcastStopped() {
@@ -375,11 +339,7 @@ public class ChatServer implements Runnable {
 		}
 	}
 
-<<<<<<< HEAD
 	public void handleGUIUDPEvent() {
-=======
-	public void handleGuiUdpEvent() {
->>>>>>> branch 'master' of https://github.com/natmat/chat.git
 		if (!UdpBroadcaster.isBeaconing()) {
 			startUDPBroadcast();
 		}
@@ -431,7 +391,6 @@ public class ChatServer implements Runnable {
 	}
 
 	public static void writeMACFrame(byte seq) {
-<<<<<<< HEAD
 		// Write MAC frame to socket
 		MACFrame frame = new MACFrame(seq);
 		ByteArrayOutputStream baos = frame.getData();
@@ -475,83 +434,6 @@ public class ChatServer implements Runnable {
 
 	public void handleGuiMACEvent() {
 		eventMAC();
-=======
-		MulticastSocket server = null;
-		InetAddress group = null;
-		try {
-			group = InetAddress.getByName("239.0.0.1");
-		} catch (UnknownHostException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}
-
-		try {
-			System.setProperty("java.net.preferIPv4Stack", "true");
-			server = new MulticastSocket(8305);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		try {
-			server.joinGroup(group);
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-
-
-		// Write MAC frame to socket
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		ObjectOutputStream oos;
-		try {
-			oos = new ObjectOutputStream(baos);
-			oos.writeObject(new MACFrame());
-			byte[] data = baos.toByteArray();
-			DatagramPacket sendPacket = new DatagramPacket(
-					data, data.length, InetAddress.getLoopbackAddress(), 8305);
-					
-			
-			baos.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		server.close();
-	}
-
-	private static final int byteArrayToInt(final Byte[] inArray) {
-		int result = 0;
-		int shift = 0;
-		for (int i = 0 ; i < inArray.length ; i++) {
-			result += (inArray[i] << shift);
-			shift += 8;
-		}
-		return result;
-	}
-
-	// Writes provided 4-byte integer to a 4 element byte array in Little-Endian order.
-	public static final byte[] intTo4ByteArray(final int value) {
-		return new byte[] {
-				(byte)(value & 0xff),
-				(byte)(value >> 8 & 0xff),
-				(byte)(value >> 16 & 0xff),
-				(byte)(value >>> 24)
-		};
-	}
-
-	private static class MACFrame {
-		byte[] header = {0x12, 0x34, 0x56, 0x78};
-		Byte[] frameControl = new Byte[] {0x01, 0x02};
-		Byte sequenceNumber = 1;
-		Byte destinationPANID = 2;
-		Byte destinationAddress = 3;
-		Byte sourcePANID = 4;
-		Byte sourceAddress = 5;
-		Byte framePayload = 6;
-		Byte fcs = 7;			
-
-		public MACFrame() {
-		}
->>>>>>> branch 'master' of https://github.com/natmat/chat.git
 	}
 }
 
